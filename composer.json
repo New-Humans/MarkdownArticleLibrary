@@ -4,6 +4,7 @@
     "description": "Markdown file organizer for PHP7",
     "keywords": ["markdown", "articles"],
     "homepage": "https://github.com/New-Humans/MarkdownArticleLibrary",
+    "license": "COMMY",
     "authors": [
         {
             "name": "Juniper McIntyre",
