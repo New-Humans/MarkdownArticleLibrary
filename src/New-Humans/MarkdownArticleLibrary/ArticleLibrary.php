@@ -1,79 +1,141 @@
 <?php
 
+/*
+ * This file is part of the new-humans/markdown-article-library package.
+ *
+ * Juniper McIntyre <junipermcintyre@gmail.com>
+ *
+ * MarkDown parsing from league/commonmark package (https://github.com/thephpleague/commonmark). File system wrapping by me.
+ *
+ * For the full copyright and license information please view he LICENSE file distributed with this source code.
+ */
+
 namespace NewHumans\MarkdownArticleLibrary;
 
 
-
 /**
- * Mostly just a container for actual Articles. One Article Library per subject!
+ * Handles file-system interaction for Articles. Uses the concepts of 'subjects' as subdirectories and 'articles' as MarkDown files.
  */
-
 class ArticleLibrary
 {
-    private $path;      // Actual on-file path
-    private $subjects; // This could be a class of its own, maybe. Not now though. Could make this node/tree style.
+    /**
+     * Absolute path to the article library base directory.
+     *
+     * @var string
+     */
+    private $path;
 
-    public function __construct($b) { // Check existence of directory. Throw error if it doesn't exist.
-        if (!is_dir($b))
-            throw new Exception("Error: Cannot read library directory '{$b}'");
-        $this->path = $b;
+    /**
+     * Associative array of subjects, by key. Subjects contain a 'path'
+     * index, and an 'articles' index.
+     *
+     * Could consider substituting with its own wrapper class, instead of associate array
+     *
+     * @var string
+     */
+    private $subjects;
 
-        $this->subjects = array();
+    /**
+     * Create a new ArticleLibrary instance
+     *
+     * @param string $baseDir
+     */
+    public function __construct($baseDir)
+    {
+        if (!is_dir($baseDir))              // Check for baseDirectory's existence first
+            throw new Exception("Error: Cannot read library directory '{$baseDir}'");
+        $this->path = rtrim($baseDir, '/'); // If all OK, set it as the path (remove trailing slash too)
+        $this->subjects = array();          // Initialize subjects array
     }
 
-    public function newSubject($sd) { // Input is the directory name of the subject. Purpose is to initialize subject
-        if (!is_dir($this->path.'/'.$sd))
-            throw new Exception("Error: Cannot read subject directory '{$this->path}/{$sd}'");
-
-        $this->subjects[$sd]['path'] = $this->path.'/'.$sd;   // Set it. They can retrieve via the same $sd value
-        $this->subjects[$sd]['articles'] = array();   // Fill with Article objects
+    /**
+     * Create a new subject within an ArticleLibrary instance. The subect key is synonymous with its directory name.
+     *
+     * @param string $subjectKey
+     */
+    public function newSubject($subjectKey)
+    {
+        if (!is_dir($this->path.'/'.$subjectKey))                   // Check for the subject directory's existence first
+            throw new Exception("Error: Cannot read subject directory '{$this->path}/{$subjectKey}'");
+        $this->subjects[$subjectKey]['path'] = $this->path.'/'.$subjectKey; // Create/set the subject. They can retrieve via the same key later
+        $this->subjects[$subjectKey]['articles'] = array();                 // Initialize with empty array of articles to start
     }
 
-    public function getSubject($sd) { // Input is subject directory. Output is a subject (path + articles array).
-        if (!isset($this->subjects[$sd]))
-            throw new Exception("Error: Subject '{$sd}' in this library has not been initialized.");
-        return $this->subjects[$sd];
+    /**
+     * Retrieve a subject by key, within an ArticleLibrary instance
+     *
+     * @param string $subjectKey
+     *
+     * @return array
+     */
+    public function getSubject($subjectKey)
+    {
+        if (!isset($this->subjects[$subjectKey]))   // If it doesn't exist, throw an error
+            throw new Exception("Error: Subject '{$subjectKey}' in this library has not been initialized.");
+        return $this->subjects[$subjectKey];        // If it did exist, then return it
     }
 
-    public function newArticle($sd, $mdFile, $key) { // Input is subject + MD file name (should end in .md) +
-                                                     // unique key (for array). Inits article into library,
-                                                     // and also returns it
-
-        // If the subject doesn't exist, try to initialize it first
-        try {
-            $subject = $this->getSubject($sd);
-        } catch (Exception $e) {
-            $this->newSubject($sd);
-            $subject = $this->getSubject($sd);
-        }
-
-        // Create an article. The article should not be responsible for confirming its own existence, the library guarantees it.
-        // In fact, the library creates it (inits it with the markdown string).
-
-        // Make sure the article exists first
-        if (!is_file($subject['path'].'/'.$mdFile))
+    /**
+     * Create a new article within a subject, within an ArticleLibrary instance
+     *
+     * @param string $subjectKey
+     * @param string $mdFile
+     * @param string $articleKey
+     */
+    public function newArticle($subjectKey, $mdFile, $articleKey)
+    {
+        $subject = $this->getSubject($subjectKey);                              // Grab the subject we want
+        if (!is_file($subject['path'].'/'.$mdFile))                             // Confirm the new article file exists
             throw new Exception("Error: Article '{$subject['path']}/{$mdFile}' cannot be read.");
-
-        // Read the MD content into a string
-        $mdContent = file_get_contents($subject['path'].'/'.$mdFile);
-
-        $this->subjects[$sd]['articles'][$key] = new Article($key, $mdContent);
+        $mdContent = file_get_contents($subject['path'].'/'.$mdFile);           // Read the whole file into a string
+        // Create a new article in the subject, with the supplied identifying key.
+        $this->subjects[$subjectKey]['articles'][$articleKey] = new Article($articleKey, $mdContent);
     }
 
-    public function getArticle($sd, $key) { // Input is subject directory. Output is Article object of specific key
-        $subject = $this->getSubject($sd);
-        if (!isset($subject['articles'][$key]))
-            throw new Exception("Error: Article '{$key}' in subject '{$sd}' has not been initialized.");
-        return $subject['articles'][$key];
+    /**
+     * Retrieve an article within a subject, within an ArticleLibrary instance
+     *
+     * @param string $subjectKey
+     * @param string $articleKey
+     *
+     * @return Article
+     */
+    public function getArticle($subjectKey, $articleKey)
+    {
+        $subject = $this->getSubject($subjectKey);      // Grab the desired subject
+        if (!isset($subject['articles'][$articleKey]))  // Make sure the article exists
+            throw new Exception("Error: Article '{$articleKey}' in subject '{$subjectDirectory}' has not been initialized.");
+        return $subject['articles'][$articleKey];       // If it does, return it. If it doesn't, throw the above exception.
     }
 
-    public function readArticle($sd, $key) {    // HTML output
-        $article = $this->getArticle($sd, $key);
-        return $article->toHtml();
+    /**
+     * Read an article within a subject within an ArticleLibrary instance.
+     * Read means return an HTML output of the article.
+     *
+     * @param string $subjectKey
+     * @param string $articleKey
+     *
+     * @return string
+     */
+    public function readArticle($subjectKey, $articleKey)
+    {
+        $article = $this->getArticle($subjectKey, $articleKey); // Get the article...
+        return $article->toHtml();                              // Return the HTML output...
     }
 
-    public function downloadArticle($sd, $key) { // MD file download output. This will end the HTTP request!
-        $article = $this->getArticle($sd, $key);
+    /**
+     * Download an article within a subject within an ArticleLibrary instance.
+     * Download means return content-type headers and the output of the file for download.
+     * Don't output anything to client before calling this if you want it to work!!
+     *
+     * @param string $subjectKey
+     * @param string $articleKey
+     *
+     * @return text/markdown
+     */
+    public function downloadArticle($subjectKey, $articleKey)
+    { // MD file download output. This will end the HTTP request!
+        $article = $this->getArticle($subjectKey, $articleKey);
         header('Content-Type: text/markdown; charset-UTF-8');
         print $article->toMarkdown();
     }
