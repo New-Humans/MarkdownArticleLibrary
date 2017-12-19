@@ -1,0 +1,24 @@
+{
+    "name": "new-humans/markdown-article-library",
+    "type": "library",
+    "description": "Markdown file organizer for PHP7",
+    "keywords": ["markdown", "articles"],
+    "homepage": "https://github.com/New-Humans/MarkdownArticleLibrary",
+    "authors": [
+        {
+            "name": "Juniper McIntyre",
+            "email": "junipermcintyre@gmail.com",
+            "homepage": "http://junipermcintyre.net/",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": ">=7.0.0",
+        "league/commonmark": "^0.16.0"
+    },
+    "autoload": {
+        "psr-0": {
+            "New-Humans\\MarkdownArticleLibrary": "src"
+        }
+    }
+}
