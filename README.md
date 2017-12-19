@@ -8,7 +8,7 @@
 * Let the writer offer these files as downloads.
 
 ## Installation
-This project can be installed via [Composer].
+This project can be installed via [Composer](https://getcomposer.org/):
 ``` bash
 $ composer require new-humans/markdown-article-library
 ```
