@@ -19,7 +19,7 @@
     },
     "autoload": {
         "psr-0": {
-            "New-Humans\\MarkdownArticleLibrary": "src"
+            "NewHumans\\MarkdownArticleLibrary": "src"
         }
     }
 }
